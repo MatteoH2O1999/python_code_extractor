@@ -1,12 +1,13 @@
 import json
 
-from typing import Any, List
+from typing import Set
 
 
 class ExtractedCode:
     def __init__(self) -> None:
         self.code: str = ""
-        self.dependencies: List[str] = []
+        self.dependencies: Set[str] = set()
+        self.imports: Set[str] = set()
 
     @staticmethod
     def from_string(string: str) -> "ExtractedCode":
@@ -14,18 +15,26 @@ class ExtractedCode:
         ret = ExtractedCode()
         try:
             ret.code = json_dict["code"]
-            ret.dependencies = json_dict["dependencies"]
+            ret.dependencies = set(json_dict["dependencies"])
+            ret.imports = set(json_dict["imports"])
         except AttributeError:
             raise ValueError("Invalid code string")
         return ret
 
     def to_string(self) -> str:
-        dictionary = {"code": self.code, "dependencies": self.dependencies}
+        dictionary = {
+            "code": self.code,
+            "dependencies": list(self.dependencies),
+            "imports": list(self.imports),
+        }
         return json.dumps(dictionary)
 
     def __str__(self) -> str:
         ret = "----code----\n"
         ret += self.code
+        ret += "----imports----"
+        for i in self.imports:
+            ret += "\n" + i
         ret += "----dependencies----"
         for dep in self.dependencies:
             ret += "\n" + dep
@@ -34,4 +43,8 @@ class ExtractedCode:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, ExtractedCode):
             return False
-        return other.code == self.code and other.dependencies == self.dependencies
+        return (
+            other.code == self.code
+            and other.dependencies == self.dependencies
+            and other.imports == self.imports
+        )

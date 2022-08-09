@@ -4,14 +4,14 @@ from typing import Callable, TextIO, Type, Union
 
 
 def dumps(
-    obj: Union[Type[object], Callable[..., object]],
+    obj: Union[object, Type[object], Callable[..., object]],
     protocol: int = pickle.DEFAULT_PROTOCOL,
 ) -> str:
     return ""
 
 
 def dump(
-    obj: Union[Type[object], Callable[..., object]],
+    obj: Union[object, Type[object], Callable[..., object]],
     file: TextIO,
     protocol: int = pickle.DEFAULT_PROTOCOL,
 ) -> None:

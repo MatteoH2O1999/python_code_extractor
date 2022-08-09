@@ -1,4 +1,5 @@
 {
   "code": "def function_1():\n    print(\"test function 1\")\n",
-  "dependencies": []
+  "dependencies": [],
+  "imports": []
 }
