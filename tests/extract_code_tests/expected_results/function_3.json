@@ -1,5 +1,6 @@
 {
-  "code": "def function_2():\n    return np.mean\n",
+  "name": "function_3",
+  "code": "def function_3():\n    return np.mean\n",
   "dependencies": [],
   "imports": ["import numpy as np"]
 }

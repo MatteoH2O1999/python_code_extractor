@@ -1,5 +1,6 @@
 {
-  "code": "def function_1():\n    print(\"test function 1\")\n",
+  "name": "function_1",
+  "code": "def function_1():\n    return \"Test return\"\n",
   "dependencies": [],
   "imports": []
 }

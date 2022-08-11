@@ -1,0 +1,6 @@
+{
+  "name": "function_4",
+  "code": "def function_4():\n    return numpy.random.random\n",
+  "dependencies": [],
+  "imports": ["import numpy.random as numpy.random", "import numpy as numpy"]
+}

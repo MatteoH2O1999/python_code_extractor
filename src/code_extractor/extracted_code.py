@@ -5,6 +5,7 @@ from typing import Set
 
 class ExtractedCode:
     def __init__(self) -> None:
+        self.name: str = ""
         self.code: str = ""
         self.dependencies: Set[str] = set()
         self.imports: Set[str] = set()
@@ -14,6 +15,7 @@ class ExtractedCode:
         json_dict = json.loads(string)
         ret = ExtractedCode()
         try:
+            ret.name = json_dict["name"]
             ret.code = json_dict["code"]
             ret.dependencies = set(json_dict["dependencies"])
             ret.imports = set(json_dict["imports"])
@@ -23,6 +25,7 @@ class ExtractedCode:
 
     def to_string(self) -> str:
         dictionary = {
+            "name": self.name,
             "code": self.code,
             "dependencies": list(self.dependencies),
             "imports": list(self.imports),
@@ -30,7 +33,9 @@ class ExtractedCode:
         return json.dumps(dictionary)
 
     def __str__(self) -> str:
-        ret = "----code----\n"
+        ret = "----name----"
+        ret += self.name
+        ret += "----code----"
         ret += self.code
         ret += "----imports----"
         for i in self.imports:
@@ -44,7 +49,8 @@ class ExtractedCode:
         if not isinstance(other, ExtractedCode):
             return False
         return (
-            other.code == self.code
+            other.name == self.name
+            and other.code == self.code
             and other.dependencies == self.dependencies
             and other.imports == self.imports
         )
