@@ -1,0 +1,6 @@
+{
+  "name": "function_7",
+  "code": "def function_7():\n    return dependency()\n",
+  "dependencies": ["def dependency():\n    return \"Test function dependency\"\n"],
+  "imports": []
+}

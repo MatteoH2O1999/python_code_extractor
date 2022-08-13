@@ -1,0 +1,6 @@
+{
+  "name": "function_6",
+  "code": "def function_6():\n    return math.pi\n",
+  "dependencies": [],
+  "imports": ["import math as math"]
+}
