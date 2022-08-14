@@ -3,13 +3,17 @@ import inspect
 import itertools
 import site
 import sys
+import re
 
 from types import ModuleType
-from typing import Callable, Tuple, Type, Set, Union
+from typing import Callable, Dict, Pattern, Tuple, Type, Set, Union
 
 from ..extracted_code import ExtractedCode
 
 
+_NESTED_DETECTOR: Pattern[str] = re.compile(
+    r"(\A|\n)[\t ]+(async def |def )[a-zA-Z_-]+\([a-zA-Z0-9,:_.-\[\] ]*\)"
+)
 _ADDITIONAL_PATH_KEYWORDS: Set[str] = {"site-packages", "lib-dynload"}
 _POSSIBLE_SITE_PATHS: Set[str] = {
     site.getuserbase(),
@@ -23,6 +27,8 @@ for sys_path in sys.path:
 
 
 def extract_code(obj: Union[object, Type[object], Callable[..., object]]) -> str:
+    if inspect.isbuiltin(obj):
+        raise ValueError("Cannot extract code from builtins.")
     if inspect.isroutine(obj):
         if inspect.ismethod(obj):
             obj = obj.__getattribute__("__func__")
@@ -67,11 +73,14 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
     imports = set()
     dependencies = set()
     closure_vars = inspect.getclosurevars(obj)
-    print(closure_vars)
     builtins_closure_vars = closure_vars.builtins
     global_closure_vars = closure_vars.globals
     non_local_closure_vars = closure_vars.nonlocals
     unbound_closure_vars = closure_vars.unbound
+    if _NESTED_DETECTOR.search(inspect.getsource(obj)) is not None:
+        global_closure_vars = dict(global_closure_vars)
+        global_closure_vars.update(_get_nested_globals(obj))
+    print(closure_vars)
     for name, closure_var in builtins_closure_vars.items():
         pass
     for name, closure_var in global_closure_vars.items():
@@ -107,9 +116,7 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                     except ModuleNotFoundError:
                         pass
         elif inspect.isroutine(closure_var):
-            module = inspect.getmodule(closure_var)
-            if module is None:
-                module = _guess_module(closure_var)
+            module = _guess_module(closure_var)
             module_path = getattr(module, "__file__", None)
             if module_path is not None:
                 user_defined = True
@@ -140,6 +147,9 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
 
 
 def _guess_module(obj: Callable[..., object]) -> ModuleType:
+    module = inspect.getmodule(obj)
+    if module is not None:
+        return module
     if inspect.isbuiltin(obj):
         instance = getattr(obj, "__self__", None)
         if instance is None:
@@ -152,3 +162,13 @@ def _guess_module(obj: Callable[..., object]) -> ModuleType:
             raise RuntimeError(f"Cannot identify module for {obj}")
         return module
     raise NotImplementedError(f"Cannot identify module for {obj}")
+
+
+def _get_nested_globals(obj: Callable[..., object]) -> Dict[str, object]:
+    glob = {}
+    source = inspect.getsource(obj)
+    declared = vars(inspect.getmodule(obj))
+    for name, o in declared.items():
+        if name != obj.__name__ and name in source:
+            glob[name] = o
+    return glob
