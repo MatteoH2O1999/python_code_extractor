@@ -45,3 +45,7 @@ jobs:
     uses: './.github/workflows/unit_tests.yml'
     with:
       testing: true
+  code_security:
+    name: Code security scan
+    needs: unit_tests
+    uses: './.github/workflows/codeql.yml'
