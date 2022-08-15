@@ -1,0 +1,6 @@
+{
+  "name": "Class2",
+  "code": "class Class2:\n    @staticmethod\n    def method(parameter):\n        return parameter\n",
+  "dependencies": [],
+  "imports": []
+}

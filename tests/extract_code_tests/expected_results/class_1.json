@@ -1,0 +1,6 @@
+{
+  "name": "Class1",
+  "code": "class Class1:\n    def method(self):\n        return \"Test method\"\n",
+  "dependencies": [],
+  "imports": []
+}

@@ -4,6 +4,7 @@ import itertools
 import site
 import sys
 import re
+import textwrap
 
 from types import ModuleType
 from typing import Callable, Dict, Pattern, Tuple, Type, Set, Union
@@ -43,7 +44,11 @@ def _extract_code(obj: Union[Type[object], Callable[..., object]]) -> ExtractedC
     if object_name is None:
         raise RuntimeError(f"Expected {obj} to have attribute __name__")
     extracted_code.name = object_name
-    extracted_code.code = inspect.getsource(obj)
+    source_code = textwrap.dedent(inspect.getsource(obj))
+    if inspect.isroutine(obj):
+        if source_code.startswith("@") and "@staticmethod\n" in source_code:
+            source_code = source_code.replace("@staticmethod\n", "")
+    extracted_code.code = source_code
     dependencies, imports = _get_dependencies(obj)
     extracted_code.dependencies = dependencies
     extracted_code.imports = imports
@@ -62,7 +67,7 @@ def _get_dependencies(
         functions = dir(obj)
         for function_name in functions:
             func = getattr(obj, function_name)
-            if inspect.isroutine(func):
+            if inspect.isfunction(func):
                 new_dep, new_imp = _get_function_dependencies(func)
                 dependencies.update(new_dep)
                 imports.update(new_imp)
@@ -115,7 +120,7 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                         imports.add(f"import {possible_module} as {possible_module}")
                     except ModuleNotFoundError:
                         pass
-        elif inspect.isroutine(closure_var):
+        elif inspect.isroutine(closure_var) or inspect.isclass(closure_var):
             module = _guess_module(closure_var)
             module_path = getattr(module, "__file__", None)
             if module_path is not None:
@@ -132,13 +137,15 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                     )
                 else:
                     dependencies.add(inspect.getsource(closure_var))
-                    new_dep, new_imp = _get_function_dependencies(closure_var)
+                    new_dep, new_imp = _get_dependencies(closure_var)
                     dependencies.update(new_dep)
                     imports.update(new_imp)
             else:
                 imports.add(
                     f"from {module.__name__} import {closure_var.__name__} as {name}"
                 )
+        else:
+            raise RuntimeError(f"Cannot save dependency {closure_var}.")
     for name, closure_var in non_local_closure_vars.items():
         pass
     for name in unbound_closure_vars:
@@ -146,7 +153,7 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
     return dependencies, imports
 
 
-def _guess_module(obj: Callable[..., object]) -> ModuleType:
+def _guess_module(obj: Union[Type[object], Callable[..., object]]) -> ModuleType:
     module = inspect.getmodule(obj)
     if module is not None:
         return module
@@ -166,9 +173,11 @@ def _guess_module(obj: Callable[..., object]) -> ModuleType:
 
 def _get_nested_globals(obj: Callable[..., object]) -> Dict[str, object]:
     glob = {}
-    source = inspect.getsource(obj)
-    declared = vars(inspect.getmodule(obj))
-    for name, o in declared.items():
-        if name != obj.__name__ and name in source:
-            glob[name] = o
+    obj_name = getattr(obj, "__name__", None)
+    if obj_name is not None:
+        source = inspect.getsource(obj)
+        declared = vars(inspect.getmodule(obj))
+        for name, o in declared.items():
+            if name != obj_name and name in source:
+                glob[name] = o
     return glob
