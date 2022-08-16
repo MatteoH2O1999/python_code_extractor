@@ -1,4 +1,6 @@
 venv
+pyre-env
+.pyre
 .idea
 *.pyc
 *.egg-info
