@@ -1,13 +1,13 @@
 import json
 import pickle
 
-from typing import Callable, Protocol, Type, Union
+from typing import Callable, Type, Union
 
 from ..extractor.extract import extract_code
 from ..loader.load import load_code
 
 
-class _ReadableFileobj(Protocol):
+class _ReadableFileobj:
     def read(self, __n: int) -> bytes:
         ...
 
@@ -15,7 +15,7 @@ class _ReadableFileobj(Protocol):
         ...
 
 
-class _WritableFileobj(Protocol):
+class _WritableFileobj:
     def write(self, __b: bytes) -> object:
         ...
 

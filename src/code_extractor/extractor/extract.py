@@ -1,13 +1,15 @@
 import importlib
 import inspect
 import itertools
+import pickle
+import re
 import site
 import sys
-import re
 import textwrap
 
 from types import ModuleType
-from typing import Callable, Dict, Pattern, Tuple, Type, Set, Union
+from typing import Callable, Dict, Iterable, Pattern, Tuple, Type, Set, Union
+from warnings import warn
 
 from ..extracted_code import ExtractedCode
 
@@ -156,7 +158,29 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                     f"from {module.__name__} import {closure_var.__name__} as {name}"
                 )
         else:
-            raise RuntimeError(f"Cannot save dependency {closure_var}.")
+            warn(
+                f"Variable {name} with content {closure_var} cannot be safely saved. "
+                f"Will fallback to pickle the value but compatibility with different versions "
+                f"is not guaranteed."
+            )
+            try:
+                bytes_string = pickle.dumps(closure_var, protocol=4, fix_imports=False)
+            except pickle.PicklingError:
+                raise RuntimeError(
+                    f"Cannot pickle dependency {name} with content {closure_var}."
+                )
+            test_reconstruct = pickle.loads(bytes_string)
+            equality: Union[bool, Iterable[bool]] = test_reconstruct == closure_var
+            if isinstance(equality, Iterable):
+                equality = all(equality)
+            else:
+                assert isinstance(equality, bool)
+            if not equality:
+                raise RuntimeError(
+                    f"Cannot reconstruct object {name} with content {closure_var} from pickling."
+                )
+            imports.add("import pickle")
+            dependencies.add(f"{name} = pickle.loads({bytes_string})")
     for name, closure_var in non_local_closure_vars.items():
         pass
     for name in unbound_closure_vars:
