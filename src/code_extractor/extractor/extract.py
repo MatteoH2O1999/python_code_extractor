@@ -11,7 +11,7 @@ from typing import Callable, Dict, Pattern, Tuple, Type, Set, Union
 
 from ..extracted_code import ExtractedCode
 
-
+_BUILTINS_MODULE_NAMES: Set[str] = {"__builtin__", "__builtins__", "builtins"}
 _NESTED_DETECTOR: Pattern[str] = re.compile(
     r"(\A|\n)[\t ]+(async def |def )[a-zA-Z_-]+\([a-zA-Z0-9,:_.-\[\] ]*\)"
 )
@@ -107,8 +107,10 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
             else:
                 imports.add(f"import {closure_var.__name__} as {name}")
                 permutations = []
-                for i in range(1, len(unbound_closure_vars) + 1):
-                    for perm in itertools.permutations(unbound_closure_vars, i):
+                possible_other_vars = list(unbound_closure_vars)
+                possible_other_vars.extend(global_closure_vars)
+                for i in range(1, len(possible_other_vars) + 1):
+                    for perm in itertools.permutations(possible_other_vars, i):
                         permutations.append(list(perm))
                 for permutation in permutations:
                     possible_module = closure_var.__name__
@@ -136,10 +138,19 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                         f"Cannot save user-defined built-in function {closure_var}"
                     )
                 else:
-                    dependencies.add(inspect.getsource(closure_var))
+                    dependencies.add(textwrap.dedent(inspect.getsource(closure_var)))
                     new_dep, new_imp = _get_dependencies(closure_var)
                     dependencies.update(new_dep)
                     imports.update(new_imp)
+                    if inspect.isclass(closure_var):
+                        for parent in inspect.getmro(closure_var):
+                            if parent.__module__ not in _BUILTINS_MODULE_NAMES:
+                                source = textwrap.dedent(inspect.getsource(parent))
+                                if source not in dependencies:
+                                    dependencies.add(source)
+                                    new_dep, new_imp = _get_dependencies(parent)
+                                    dependencies.update(new_dep)
+                                    imports.update(new_imp)
             else:
                 imports.add(
                     f"from {module.__name__} import {closure_var.__name__} as {name}"
