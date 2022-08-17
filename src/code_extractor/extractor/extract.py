@@ -1,23 +1,29 @@
 import importlib
 import inspect
-import itertools
 import pickle
 import re
 import site
 import sys
 import textwrap
 
+from threading import Lock
 from types import ModuleType
 from typing import Callable, Dict, Iterable, Pattern, Tuple, Type, Set, Union
 from warnings import warn
 
 from ..extracted_code import ExtractedCode
 
+_MODULE_LOCK: Lock = Lock()
+_SAVED_CODE: Set[str] = set()
 _BUILTINS_MODULE_NAMES: Set[str] = {"__builtin__", "__builtins__", "builtins"}
 _NESTED_DETECTOR: Pattern[str] = re.compile(
     r"(\A|\n)[\t ]+(async def |def )[a-zA-Z_-]+\([a-zA-Z0-9,:_.-\[\] ]*\)"
 )
-_ADDITIONAL_PATH_KEYWORDS: Set[str] = {"site-packages", "lib-dynload"}
+_ADDITIONAL_PATH_KEYWORDS: Set[str] = {
+    "site-packages",
+    "lib-dynload",
+    "PythonSoftwareFoundation",
+}
 _POSSIBLE_SITE_PATHS: Set[str] = {
     site.getuserbase(),
     site.getusersitepackages(),
@@ -32,6 +38,7 @@ for sys_path in sys.path:
 def extract_code(
     obj: Union[object, Type[object], Callable[..., object]],
     get_requirements: bool = False,
+    freeze_code: bool = True,
 ) -> str:
     if inspect.isbuiltin(obj):
         raise ValueError("Cannot extract code from builtins.")
@@ -40,7 +47,14 @@ def extract_code(
             obj = obj.__getattribute__("__func__")
     elif not inspect.isclass(obj):
         obj = obj.__class__
-    return _extract_code(obj, get_requirements=get_requirements).to_string()
+    global _MODULE_LOCK
+    global _SAVED_CODE
+    with _MODULE_LOCK:
+        to_return = _extract_code(obj, get_requirements=get_requirements).to_string(
+            freeze_code=freeze_code
+        )
+        _SAVED_CODE = set()
+    return to_return
 
 
 def _extract_code(
@@ -52,6 +66,7 @@ def _extract_code(
         raise RuntimeError(f"Expected {obj} to have attribute __name__")
     extracted_code.name = object_name
     source_code = textwrap.dedent(inspect.getsource(obj))
+    _SAVED_CODE.add(source_code)
     if inspect.isroutine(obj):
         if source_code.startswith("@") and "@staticmethod\n" in source_code:
             source_code = source_code.replace("@staticmethod\n", "")
@@ -116,22 +131,21 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                 else:
                     assert "." not in name
                     imports.add(f"import {closure_var.__name__} as {name}")
-                permutations = []
                 possible_other_vars = list(unbound_closure_vars)
-                possible_other_vars.extend(global_closure_vars)
-                for i in range(1, len(possible_other_vars) + 1):
-                    for perm in itertools.permutations(possible_other_vars, i):
-                        permutations.append(list(perm))
-                for permutation in permutations:
-                    possible_module = closure_var.__name__
-                    for submodule in permutation:
-                        possible_module += f".{submodule}"
-                    try:
-                        imported_submodule = importlib.import_module(possible_module)
-                        assert inspect.ismodule(imported_submodule)
-                        imports.add(f"import {possible_module}")
-                    except ModuleNotFoundError:
-                        pass
+                possible_other_vars.extend(global_closure_vars.keys())
+                modules = [closure_var.__name__]
+                for module in modules:
+                    for possible_other_var in possible_other_vars:
+                        possible_module = f"{module}.{possible_other_var}"
+                        try:
+                            imported_submodule = importlib.import_module(
+                                possible_module
+                            )
+                            assert inspect.ismodule(imported_submodule)
+                            imports.add(f"import {possible_module}")
+                            modules.append(possible_module)
+                        except ModuleNotFoundError:
+                            pass
         elif inspect.isroutine(closure_var) or inspect.isclass(closure_var):
             module = _guess_module(closure_var)
             module_path = getattr(module, "__file__", None)
@@ -148,19 +162,30 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                         f"Cannot save user-defined built-in function {closure_var}"
                     )
                 else:
-                    dependencies.add(textwrap.dedent(inspect.getsource(closure_var)))
-                    new_dep, new_imp = _get_dependencies(closure_var)
-                    dependencies.update(new_dep)
-                    imports.update(new_imp)
-                    if inspect.isclass(closure_var):
-                        for parent in inspect.getmro(closure_var):
-                            if parent.__module__ not in _BUILTINS_MODULE_NAMES:
-                                source = textwrap.dedent(inspect.getsource(parent))
-                                if source not in dependencies:
-                                    dependencies.add(source)
-                                    new_dep, new_imp = _get_dependencies(parent)
-                                    dependencies.update(new_dep)
-                                    imports.update(new_imp)
+                    if (
+                        textwrap.dedent(inspect.getsource(closure_var))
+                        not in _SAVED_CODE
+                    ):
+                        dependencies.add(
+                            textwrap.dedent(inspect.getsource(closure_var))
+                        )
+                        _SAVED_CODE.add(textwrap.dedent(inspect.getsource(closure_var)))
+                        new_dep, new_imp = _get_dependencies(closure_var)
+                        dependencies.update(new_dep)
+                        imports.update(new_imp)
+                        if inspect.isclass(closure_var):
+                            for parent in inspect.getmro(closure_var):
+                                if parent.__module__ not in _BUILTINS_MODULE_NAMES:
+                                    source = textwrap.dedent(inspect.getsource(parent))
+                                    if (
+                                        source not in dependencies
+                                        and source not in _SAVED_CODE
+                                    ):
+                                        dependencies.add(source)
+                                        _SAVED_CODE.add(source)
+                                        new_dep, new_imp = _get_dependencies(parent)
+                                        dependencies.update(new_dep)
+                                        imports.update(new_imp)
             else:
                 if closure_var.__name__ == name:
                     imports.add(f"from {module.__name__} import {closure_var.__name__}")

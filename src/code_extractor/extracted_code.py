@@ -3,7 +3,7 @@ import json
 import subprocess
 import sys
 
-from typing import Set
+from typing import Optional, Set
 
 
 class ExtractedCode:
@@ -22,11 +22,15 @@ class ExtractedCode:
                 .splitlines(keepends=False)
             )
             self.requirements = set(req)
+        self.frozen_code: Optional[str] = None
 
     @staticmethod
     def from_string(string: str) -> "ExtractedCode":
         json_dict = json.loads(string)
+        assert isinstance(json_dict, dict)
         ret = ExtractedCode(get_requirements=False)
+        if "frozen_code" in json_dict.keys():
+            ret.frozen_code = json_dict["frozen_code"]
         try:
             ret.name = json_dict["name"]
             ret.code = json_dict["code"]
@@ -37,7 +41,7 @@ class ExtractedCode:
             raise ValueError("Invalid code string")
         return ret
 
-    def to_string(self) -> str:
+    def to_string(self, freeze_code: bool = True) -> str:
         dictionary = {
             "name": self.name,
             "code": self.code,
@@ -45,9 +49,15 @@ class ExtractedCode:
             "imports": list(self.imports),
             "requirements": list(self.requirements),
         }
+        if freeze_code:
+            if self.frozen_code is None:
+                self.frozen_code = self.to_code()
+            dictionary["frozen_code"] = self.frozen_code
         return json.dumps(dictionary)
 
     def to_code(self) -> str:
+        if self.frozen_code is not None:
+            return self.frozen_code
         code = ""
         for imp in self.imports:
             code += imp + "\n"
@@ -72,16 +82,19 @@ class ExtractedCode:
         return code
 
     def __str__(self) -> str:
-        ret = "----name----"
-        ret += self.name
-        ret += "\n----code----"
-        ret += self.code
-        ret += "\n----imports----"
-        for i in self.imports:
-            ret += "\n" + i
-        ret += "\n----dependencies----"
-        for dep in self.dependencies:
-            ret += "\n" + dep
+        if self.frozen_code is not None:
+            ret = "----frozen code----\n" + self.frozen_code
+        else:
+            ret = "----name----"
+            ret += self.name
+            ret += "\n----code----"
+            ret += self.code
+            ret += "\n----imports----"
+            for i in self.imports:
+                ret += "\n" + i
+            ret += "\n----dependencies----"
+            for dep in self.dependencies:
+                ret += "\n" + dep
         ret += "\n----requirements----"
         for req in self.requirements:
             ret += "\n" + req
@@ -96,4 +109,5 @@ class ExtractedCode:
             and other.dependencies == self.dependencies
             and other.imports == self.imports
             and other.requirements == self.requirements
+            and other.frozen_code == self.frozen_code
         )
