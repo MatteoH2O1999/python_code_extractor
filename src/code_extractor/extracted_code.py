@@ -46,6 +46,15 @@ class ExtractedCode:
         }
         return json.dumps(dictionary)
 
+    def to_code(self) -> str:
+        code = ""
+        for imp in self.imports:
+            code += imp + "\n"
+        for dep in self.dependencies:
+            code += dep + "\n"
+        code += self.code
+        return code
+
     def __str__(self) -> str:
         ret = "----name----"
         ret += self.name
