@@ -2,5 +2,6 @@
   "name": "function_8",
   "code": "def function_8():\n    return random, mean\n",
   "dependencies": [],
-  "imports": ["from numpy.random.mtrand import random as random", "from numpy import mean as mean"]
+  "imports": ["from numpy.random.mtrand import random as random", "from numpy import mean as mean"],
+  "requirements" : []
 }

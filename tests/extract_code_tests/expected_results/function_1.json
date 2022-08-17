@@ -2,5 +2,6 @@
   "name": "function_1",
   "code": "def function_1():\n    return \"Test return\"\n",
   "dependencies": [],
-  "imports": []
+  "imports": [],
+  "requirements" : []
 }

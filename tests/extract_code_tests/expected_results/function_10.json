@@ -2,5 +2,6 @@
   "name": "function_10",
   "code": "def function_10():\n    instance = DependencyClass()\n    return instance.method()\n",
   "dependencies": ["class DependencyClass(ParentClass):\n    def method(self):\n        return self.dep\n", "class ParentClass:\n    def __init__(self):\n        self.dep = mean\n"],
-  "imports": ["from numpy import mean as mean"]
+  "imports": ["from numpy import mean as mean"],
+  "requirements" : []
 }

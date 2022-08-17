@@ -2,5 +2,6 @@
   "name": "method",
   "code": "def method(self):\n    return \"Test method\"\n",
   "dependencies": [],
-  "imports": []
+  "imports": [],
+  "requirements" : []
 }

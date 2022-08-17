@@ -29,7 +29,10 @@ for sys_path in sys.path:
             _POSSIBLE_SITE_PATHS.add(sys_path)
 
 
-def extract_code(obj: Union[object, Type[object], Callable[..., object]]) -> str:
+def extract_code(
+    obj: Union[object, Type[object], Callable[..., object]],
+    get_requirements: bool = False,
+) -> str:
     if inspect.isbuiltin(obj):
         raise ValueError("Cannot extract code from builtins.")
     if inspect.isroutine(obj):
@@ -37,11 +40,13 @@ def extract_code(obj: Union[object, Type[object], Callable[..., object]]) -> str
             obj = obj.__getattribute__("__func__")
     elif not inspect.isclass(obj):
         obj = obj.__class__
-    return _extract_code(obj).to_string()
+    return _extract_code(obj, get_requirements=get_requirements).to_string()
 
 
-def _extract_code(obj: Union[Type[object], Callable[..., object]]) -> ExtractedCode:
-    extracted_code = ExtractedCode()
+def _extract_code(
+    obj: Union[Type[object], Callable[..., object]], get_requirements: bool = False
+) -> ExtractedCode:
+    extracted_code = ExtractedCode(get_requirements=get_requirements)
     object_name = getattr(obj, "__name__", None)
     if object_name is None:
         raise RuntimeError(f"Expected {obj} to have attribute __name__")
@@ -87,7 +92,6 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
     if _NESTED_DETECTOR.search(inspect.getsource(obj)) is not None:
         global_closure_vars = dict(global_closure_vars)
         global_closure_vars.update(_get_nested_globals(obj))
-    print(closure_vars)
     for name, closure_var in builtins_closure_vars.items():
         pass
     for name, closure_var in global_closure_vars.items():

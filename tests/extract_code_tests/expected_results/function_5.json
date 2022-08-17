@@ -2,5 +2,6 @@
   "name": "function_5",
   "code": "def function_5():\n    return rnd.random\n",
   "dependencies": [],
-  "imports": ["import numpy.random as rnd"]
+  "imports": ["import numpy.random as rnd"],
+  "requirements" : []
 }

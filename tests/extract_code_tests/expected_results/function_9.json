@@ -2,5 +2,6 @@
   "name": "function_9",
   "code": "def function_9():\n    def nested():\n        return random\n\n    return nested, mean\n",
   "dependencies": [],
-  "imports": ["from numpy.random.mtrand import random as random", "from numpy import mean as mean"]
+  "imports": ["from numpy.random.mtrand import random as random", "from numpy import mean as mean"],
+  "requirements" : []
 }
