@@ -2,6 +2,6 @@
   "name": "function_11",
   "code": "def function_11():\n    return Dep1.dep1(), Dep1.dep2(), Dep2.dep1(), Dep2.dep2()\n",
   "dependencies": ["class Dep1:\n    @staticmethod\n    def dep1():\n        return mean\n\n    @staticmethod\n    def dep2():\n        return np\n", "class Dep2:\n    @staticmethod\n    def dep1():\n        return numpy.random\n\n    @staticmethod\n    def dep2():\n        return random\n"],
-  "imports": ["from numpy import mean as mean", "from numpy.random.mtrand import random as random", "import numpy.random as numpy.random", "import numpy as np", "import numpy as numpy"],
+  "imports": ["from numpy import mean", "from numpy.random.mtrand import random", "import numpy.random", "import numpy as np", "import numpy"],
   "requirements" : []
 }

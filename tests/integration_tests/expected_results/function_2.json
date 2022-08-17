@@ -2,6 +2,6 @@
   "name": "function_2",
   "code": "def function_2():\n    return numpy.mean\n",
   "dependencies": [],
-  "imports": ["import numpy as numpy"],
+  "imports": ["import numpy"],
   "requirements" : []
 }

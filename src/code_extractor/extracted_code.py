@@ -1,3 +1,4 @@
+import itertools
 import json
 import subprocess
 import sys
@@ -50,7 +51,22 @@ class ExtractedCode:
         code = ""
         for imp in self.imports:
             code += imp + "\n"
-        for dep in self.dependencies:
+        deps = None
+        for dep_order in itertools.permutations(self.dependencies):
+            tmp_code = code
+            for dep in dep_order:
+                tmp_code += dep + "\n"
+            try:
+                exec(tmp_code, {})
+            except NameError:
+                continue
+            deps = dep_order
+            break
+        if deps is None:
+            raise RuntimeError(
+                f"Cannot find dependency order with dependencies {self.dependencies}"
+            )
+        for dep in deps:
             code += dep + "\n"
         code += self.code
         return code

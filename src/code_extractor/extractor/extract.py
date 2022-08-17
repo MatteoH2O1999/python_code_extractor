@@ -111,7 +111,11 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                     f"Package cannot extract user defined module dependencies yet"
                 )
             else:
-                imports.add(f"import {closure_var.__name__} as {name}")
+                if closure_var.__name__ == name:
+                    imports.add(f"import {closure_var.__name__}")
+                else:
+                    assert "." not in name
+                    imports.add(f"import {closure_var.__name__} as {name}")
                 permutations = []
                 possible_other_vars = list(unbound_closure_vars)
                 possible_other_vars.extend(global_closure_vars)
@@ -125,7 +129,7 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                     try:
                         imported_submodule = importlib.import_module(possible_module)
                         assert inspect.ismodule(imported_submodule)
-                        imports.add(f"import {possible_module} as {possible_module}")
+                        imports.add(f"import {possible_module}")
                     except ModuleNotFoundError:
                         pass
         elif inspect.isroutine(closure_var) or inspect.isclass(closure_var):
@@ -158,9 +162,13 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                                     dependencies.update(new_dep)
                                     imports.update(new_imp)
             else:
-                imports.add(
-                    f"from {module.__name__} import {closure_var.__name__} as {name}"
-                )
+                if closure_var.__name__ == name:
+                    imports.add(f"from {module.__name__} import {closure_var.__name__}")
+                else:
+                    assert "." not in name
+                    imports.add(
+                        f"from {module.__name__} import {closure_var.__name__} as {name}"
+                    )
         else:
             warn(
                 f"Variable {name} with content {closure_var} cannot be safely saved. "

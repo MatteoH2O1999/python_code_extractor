@@ -1,10 +1,11 @@
+import inspect
 import os
 import numpy as np
 import warnings
 
 from numpy import mean
 
-from code_extractor import extract_code
+from code_extractor import extract_code, load_code
 from code_extractor.extracted_code import ExtractedCode
 
 CURRENT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -47,3 +48,18 @@ def test_extract_function_with_global_variable():
         for dep in extracted_code.dependencies:
             exec(dep, extracted_dict)
         np.testing.assert_equal(extracted_dict, expected_dict)
+
+
+def test_load_function_with_global_variable():
+    with open(
+        os.path.join(CURRENT_DIRECTORY, "expected_results", "function_12.json")
+    ) as json_file:
+        json_txt = json_file.read()
+    extracted_method = load_code(json_txt)
+    assert inspect.isfunction(extracted_method)
+    assert extracted_method.__name__ == "function_12"
+    assert extracted_method() == (
+        mean(TEST_GLOBAL_VARIABLE),
+        TEST_GLOBAL_DICT,
+        TEST_GLOBAL_FLOAT,
+    )
