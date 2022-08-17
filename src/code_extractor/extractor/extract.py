@@ -11,7 +11,7 @@ from types import ModuleType
 from typing import Callable, Dict, Iterable, Pattern, Tuple, Type, Set, Union
 from warnings import warn
 
-from ..extracted_code import ExtractedCode
+from ..extracted_code import _ExtractedCode
 
 _MODULE_LOCK: Lock = Lock()
 _SAVED_CODE: Set[str] = set()
@@ -59,8 +59,8 @@ def extract_code(
 
 def _extract_code(
     obj: Union[Type[object], Callable[..., object]], get_requirements: bool = False
-) -> ExtractedCode:
-    extracted_code = ExtractedCode(get_requirements=get_requirements)
+) -> _ExtractedCode:
+    extracted_code = _ExtractedCode(get_requirements=get_requirements)
     object_name = getattr(obj, "__name__", None)
     if object_name is None:
         raise RuntimeError(f"Expected {obj} to have attribute __name__")

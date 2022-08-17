@@ -4,7 +4,7 @@ import subprocess
 import sys
 
 from code_extractor import extract_code, load_code
-from code_extractor.extracted_code import ExtractedCode
+from code_extractor.extracted_code import _ExtractedCode
 
 CURRENT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 
@@ -18,8 +18,8 @@ def test_extract_isolated_function():
         os.path.join(CURRENT_DIRECTORY, "expected_results", "function_1.json")
     ) as json_file:
         json_txt = json_file.read()
-    expected_code = ExtractedCode.from_string(json_txt)
-    extracted_code = ExtractedCode.from_string(extract_code(function_1))
+    expected_code = _ExtractedCode.from_string(json_txt)
+    extracted_code = _ExtractedCode.from_string(extract_code(function_1))
     assert extracted_code.name == expected_code.name
     assert extracted_code.code == expected_code.code
     assert extracted_code.dependencies == expected_code.dependencies
@@ -31,8 +31,8 @@ def test_extract_isolated_function_with_requirements():
         os.path.join(CURRENT_DIRECTORY, "expected_results", "function_1.json")
     ) as json_file:
         json_txt = json_file.read()
-    expected_code = ExtractedCode.from_string(json_txt)
-    extracted_code = ExtractedCode.from_string(
+    expected_code = _ExtractedCode.from_string(json_txt)
+    extracted_code = _ExtractedCode.from_string(
         extract_code(function_1, get_requirements=True)
     )
     assert extracted_code.name == expected_code.name

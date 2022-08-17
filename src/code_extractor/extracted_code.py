@@ -6,7 +6,7 @@ import sys
 from typing import Optional, Set
 
 
-class ExtractedCode:
+class _ExtractedCode:
     def __init__(self, get_requirements: bool = True) -> None:
         self.name: str = ""
         self.code: str = ""
@@ -25,10 +25,10 @@ class ExtractedCode:
         self.frozen_code: Optional[str] = None
 
     @staticmethod
-    def from_string(string: str) -> "ExtractedCode":
+    def from_string(string: str) -> "_ExtractedCode":
         json_dict = json.loads(string)
         assert isinstance(json_dict, dict)
-        ret = ExtractedCode(get_requirements=False)
+        ret = _ExtractedCode(get_requirements=False)
         if "frozen_code" in json_dict.keys():
             ret.frozen_code = json_dict["frozen_code"]
         try:
@@ -101,7 +101,7 @@ class ExtractedCode:
         return ret
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, ExtractedCode):
+        if not isinstance(other, _ExtractedCode):
             return False
         return (
             other.name == self.name

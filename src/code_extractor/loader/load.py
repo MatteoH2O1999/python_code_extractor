@@ -2,11 +2,11 @@ import inspect
 
 from typing import Callable, Type, Union
 
-from ..extracted_code import ExtractedCode
+from ..extracted_code import _ExtractedCode
 
 
 def load_code(code: str) -> Union[Type[object], Callable[..., object]]:
-    extracted_code = ExtractedCode.from_string(code)
+    extracted_code = _ExtractedCode.from_string(code)
     global_dict = {}
     exec(extracted_code.to_code(), global_dict)
     if extracted_code.name not in global_dict.keys():
