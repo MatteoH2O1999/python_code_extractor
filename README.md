@@ -12,3 +12,90 @@
 </p>
 
 Python code extractor
+
+## Dependencies
+
+Written in pure `Python` and has no dependencies other than the base libraries.
+
+## Installation
+
+From source code:
+
+```commandline
+pip install .
+```
+
+From `PyPI`:
+
+```commandline
+pip install code-extractor
+```
+
+## Import
+
+### Main functions
+
+```python
+import code_extractor
+from code_extractor import extract_code, load_code
+```
+
+### Pickle API
+
+```python
+import code_extractor.pickle
+```
+
+or as a drop-in for `pickle`:
+```python
+import code_extractor.pickle as pickle
+```
+
+## Usage
+
+Given the following:
+
+```python
+class Class:
+    def __init__(self):
+        self.test = 42
+
+def function():
+    return 42
+```
+
+Use
+
+```pycon
+>>> import code_extractor
+>>> extracted_class = code_extractor.extract_code(Class)
+>>> extracted_function = code_extractor.extract_code(function)
+>>> reconstructed_class = code_extractor.load_code(extracted_class)
+>>> instance = reconstructed_class()
+>>> instance.test
+42
+>>> reconstructed_function = code_extractor.load_code(extracted_function)
+>>> reconstructed_function()
+42
+```
+
+## Pickle module
+
+```pycon
+>>> import code_extractor
+>>> code_extractor.dump(...)
+>>> code_extractor.dumps()
+>>> code_extractor.load(...)
+>>> code_extractor.loads(...)
+```
+
+Or
+
+```pycon
+>>> import code_extractor.pickle as pickle
+>>> pickle.dump(...)
+>>> pickle.dumps(...)
+>>> pickle.load(...)
+>>> pickle.loads(...)
+```
+
