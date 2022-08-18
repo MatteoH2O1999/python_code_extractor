@@ -1,7 +1,6 @@
 """
 Module containing code for extracting source code from live python objects.
 """
-import enum
 import importlib
 import inspect
 import pickle
@@ -17,7 +16,6 @@ from warnings import warn
 
 from ..extracted_code import _ExtractedCode
 
-_BLACKLISTED_CLASSES: Set[Type[object]] = {enum.EnumMeta}
 _MODULE_LOCK: Lock = Lock()
 _SAVED_CODE: Set[str] = set()
 _BUILTINS_MODULE_NAMES: Set[str] = {"__builtin__", "__builtins__", "builtins"}
@@ -167,11 +165,7 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                             modules.append(possible_module)
                         except ModuleNotFoundError:
                             pass
-        elif inspect.isroutine(closure_var) or (
-            inspect.isclass(closure_var)
-            and getattr(closure_var, "__class__", None) not in _BLACKLISTED_CLASSES
-        ):
-            # TODO: figure out better way to handle dynamically created enums
+        elif inspect.isroutine(closure_var) or inspect.isclass(closure_var):
             module = _guess_module(closure_var)
             module_path = getattr(module, "__file__", None)
             if module_path is not None:
@@ -188,7 +182,8 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                     )
                 else:
                     if (
-                        textwrap.dedent(inspect.getsource(closure_var))
+                        _has_source(closure_var)
+                        and textwrap.dedent(inspect.getsource(closure_var))
                         not in _SAVED_CODE
                     ):
                         dependencies.add(
@@ -211,6 +206,10 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                                         new_dep, new_imp = _get_dependencies(parent)
                                         dependencies.update(new_dep)
                                         imports.update(new_imp)
+                    else:
+                        new_dep, new_imp = _pickle(name, closure_var)
+                        dependencies.update(new_dep)
+                        imports.update(new_imp)
             else:
                 if closure_var.__name__ == name:
                     imports.add(f"from {module.__name__} import {closure_var.__name__}")
@@ -220,29 +219,9 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                         f"from {module.__name__} import {closure_var.__name__} as {name}"
                     )
         else:
-            warn(
-                f"Variable {name} with content {closure_var} cannot be safely saved. "
-                f"Will fallback to pickle the value but compatibility with different versions "
-                f"is not guaranteed."
-            )
-            try:
-                bytes_string = pickle.dumps(closure_var, protocol=4, fix_imports=False)
-            except pickle.PicklingError:
-                raise RuntimeError(
-                    f"Cannot pickle dependency {name} with content {closure_var}."
-                )
-            test_reconstruct = pickle.loads(bytes_string)
-            equality: Union[bool, Iterable[bool]] = test_reconstruct == closure_var
-            if isinstance(equality, Iterable):
-                equality = all(equality)
-            else:
-                assert isinstance(equality, bool)
-            if not equality:
-                raise RuntimeError(
-                    f"Cannot reconstruct object {name} with content {closure_var} from pickling."
-                )
-            imports.add("import pickle")
-            dependencies.add(f"{name} = pickle.loads({bytes_string})")
+            new_dep, new_imp = _pickle(name, closure_var)
+            dependencies.update(new_dep)
+            imports.update(new_imp)
     for name, closure_var in non_local_closure_vars.items():
         pass
     for name in unbound_closure_vars:
@@ -278,3 +257,40 @@ def _get_nested_globals(obj: Callable[..., object]) -> Dict[str, object]:
             if name != obj_name and name in source:
                 glob[name] = o
     return glob
+
+
+def _has_source(obj: Union[Type[object], Callable[..., object]]) -> bool:
+    try:
+        inspect.getsource(obj)
+    except OSError:
+        return False
+    return True
+
+
+def _pickle(name: str, closure_var: object) -> Tuple[Set[str], Set[str]]:
+    imports = set()
+    dependencies = set()
+    warn(
+        f"Variable {name} with content {closure_var} cannot be safely saved. "
+        f"Will fallback to pickle the value but compatibility with different versions "
+        f"is not guaranteed."
+    )
+    try:
+        bytes_string = pickle.dumps(closure_var, protocol=4, fix_imports=False)
+    except pickle.PicklingError:
+        raise RuntimeError(
+            f"Cannot pickle dependency {name} with content {closure_var}."
+        )
+    test_reconstruct = pickle.loads(bytes_string)
+    equality: Union[bool, Iterable[bool]] = test_reconstruct == closure_var
+    if isinstance(equality, Iterable):
+        equality = all(equality)
+    else:
+        assert isinstance(equality, bool)
+    if not equality:
+        raise RuntimeError(
+            f"Cannot reconstruct object {name} with content {closure_var} from pickling."
+        )
+    imports.add("import pickle")
+    dependencies.add(f"{name} = pickle.loads({bytes_string})")
+    return dependencies, imports

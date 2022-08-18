@@ -1,9 +1,8 @@
-import itertools
 import json
 import subprocess
 import sys
 
-from typing import Optional, Set
+from typing import List, Optional, Set
 
 
 class _ExtractedCode:
@@ -61,18 +60,16 @@ class _ExtractedCode:
         code = ""
         for imp in self.imports:
             code += imp + "\n"
-        deps = None
-        for dep_order in itertools.permutations(self.dependencies):
-            tmp_code = code
-            for dep in dep_order:
-                tmp_code += dep + "\n"
-            try:
-                exec(tmp_code, {})
-            except NameError:
-                continue
-            deps = dep_order
-            break
-        if deps is None:
+        deps = []
+        to_order = self.dependencies.copy()
+        while len(to_order) > 0:
+            for remaining_dep in to_order:
+                tmp_deps = deps + [remaining_dep]
+                if _test_dep_order(code, tmp_deps):
+                    deps = tmp_deps
+                    to_order.remove(remaining_dep)
+                    break
+        if len(deps) != len(self.dependencies):
             raise RuntimeError(
                 f"Cannot find dependency order with dependencies {self.dependencies}"
             )
@@ -85,17 +82,21 @@ class _ExtractedCode:
         if self.frozen_code is not None:
             ret = "----frozen code----\n" + self.frozen_code
         else:
-            ret = "----name----"
+            ret = "----name----\n"
             ret += self.name
-            ret += "\n----code----"
+            ret += "----code----\n"
             ret += self.code
-            ret += "\n----imports----"
+            ret += "----imports----"
             for i in self.imports:
                 ret += "\n" + i
             ret += "\n----dependencies----"
             for dep in self.dependencies:
                 ret += "\n" + dep
-        ret += "\n----requirements----"
+        ret += (
+            "\n----requirements----"
+            if len(self.dependencies) == 0
+            else "----requirements----"
+        )
         for req in self.requirements:
             ret += "\n" + req
         return ret
@@ -111,3 +112,14 @@ class _ExtractedCode:
             and other.requirements == self.requirements
             and other.frozen_code == self.frozen_code
         )
+
+
+def _test_dep_order(code: str, deps: List[str]) -> bool:
+    tmp_code = code
+    for dep in deps:
+        tmp_code += dep + "\n"
+    try:
+        exec(tmp_code, {})
+    except NameError:
+        return False
+    return True
