@@ -181,31 +181,35 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                         f"Cannot save user-defined built-in function {closure_var}"
                     )
                 else:
-                    if (
-                        _has_source(closure_var)
-                        and textwrap.dedent(inspect.getsource(closure_var))
-                        not in _SAVED_CODE
-                    ):
-                        dependencies.add(
+                    if _has_source(closure_var):
+                        if (
                             textwrap.dedent(inspect.getsource(closure_var))
-                        )
-                        _SAVED_CODE.add(textwrap.dedent(inspect.getsource(closure_var)))
-                        new_dep, new_imp = _get_dependencies(closure_var)
-                        dependencies.update(new_dep)
-                        imports.update(new_imp)
-                        if inspect.isclass(closure_var):
-                            for parent in inspect.getmro(closure_var):
-                                if parent.__module__ not in _BUILTINS_MODULE_NAMES:
-                                    source = textwrap.dedent(inspect.getsource(parent))
-                                    if (
-                                        source not in dependencies
-                                        and source not in _SAVED_CODE
-                                    ):
-                                        dependencies.add(source)
-                                        _SAVED_CODE.add(source)
-                                        new_dep, new_imp = _get_dependencies(parent)
-                                        dependencies.update(new_dep)
-                                        imports.update(new_imp)
+                            not in _SAVED_CODE
+                        ):
+                            dependencies.add(
+                                textwrap.dedent(inspect.getsource(closure_var))
+                            )
+                            _SAVED_CODE.add(
+                                textwrap.dedent(inspect.getsource(closure_var))
+                            )
+                            new_dep, new_imp = _get_dependencies(closure_var)
+                            dependencies.update(new_dep)
+                            imports.update(new_imp)
+                            if inspect.isclass(closure_var):
+                                for parent in inspect.getmro(closure_var):
+                                    if parent.__module__ not in _BUILTINS_MODULE_NAMES:
+                                        source = textwrap.dedent(
+                                            inspect.getsource(parent)
+                                        )
+                                        if (
+                                            source not in dependencies
+                                            and source not in _SAVED_CODE
+                                        ):
+                                            dependencies.add(source)
+                                            _SAVED_CODE.add(source)
+                                            new_dep, new_imp = _get_dependencies(parent)
+                                            dependencies.update(new_dep)
+                                            imports.update(new_imp)
                     else:
                         new_dep, new_imp = _pickle(name, closure_var)
                         dependencies.update(new_dep)
