@@ -1,3 +1,6 @@
+"""
+Module containing code for extracting source code from live python objects.
+"""
 import importlib
 import inspect
 import pickle
@@ -40,6 +43,22 @@ def extract_code(
     get_requirements: bool = False,
     freeze_code: bool = True,
 ) -> str:
+    """
+    Extract the source code from the specified object. If it is an instance, the code for the class is
+    extracted, if it is a function, the code for the function is extracted. Dependencies and imports are
+    extracted as well as imports (third-party dependencies) or source code (user-defined dependencies).
+
+    :param obj: The object to extract the source code from.
+    :type obj: type(object), Callable[..., object]
+    :param get_requirements: If True will include a pip freeze in the string.
+        Useful to ensure the environment is compatible.
+    :type get_requirements: bool
+    :param freeze_code: If True the code to recreate obj is calculated and included in the
+        string.
+    :type freeze_code: bool
+    :return: The string with the extracted information.
+    :rtype: str
+    """
     if inspect.isbuiltin(obj):
         raise ValueError("Cannot extract code from builtins.")
     if inspect.isroutine(obj):

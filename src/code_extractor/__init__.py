@@ -1,5 +1,10 @@
 """
-Placeholder package docstring
+Allows to save python functions and classes and load them without knowing the code.
+
+This exports:
+    - extract_code: to extract code to a string
+    - load_code: to load code from a string extracted by this package
+    - dump, dumps, load, loads: familiar API from the pickle and marshal modules
 """
 __version__ = "0.1.0"
 

@@ -1,3 +1,6 @@
+"""
+Module containing code for loading the source code extracted from live python objects.
+"""
 import inspect
 
 from typing import Callable, Type, Union
@@ -6,6 +9,17 @@ from ..extracted_code import _ExtractedCode
 
 
 def load_code(code: str) -> Union[Type[object], Callable[..., object]]:
+    """
+    Load the provided source code and return the previously extracted class or function.
+    Note that only strings extracted with this package are guaranteed to be restored.
+    No guarantees are given with arbitrary strings (this package makes use of exec,
+    only use strings whose origin you trust).
+
+    :param code: The extracted code.
+    :type code: str
+    :return: The extracted class or function.
+    :rtype: type(object), Callable[..., object]
+    """
     extracted_code = _ExtractedCode.from_string(code)
     global_dict = {}
     exec(extracted_code.to_code(), global_dict)
