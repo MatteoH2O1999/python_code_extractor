@@ -1,6 +1,7 @@
 """
 Module containing code for extracting source code from live python objects.
 """
+import enum
 import importlib
 import inspect
 import pickle
@@ -16,6 +17,7 @@ from warnings import warn
 
 from ..extracted_code import _ExtractedCode
 
+_BLACKLISTED_CLASSES: Set[Type[object]] = {enum.EnumMeta}
 _MODULE_LOCK: Lock = Lock()
 _SAVED_CODE: Set[str] = set()
 _BUILTINS_MODULE_NAMES: Set[str] = {"__builtin__", "__builtins__", "builtins"}
@@ -165,7 +167,11 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                             modules.append(possible_module)
                         except ModuleNotFoundError:
                             pass
-        elif inspect.isroutine(closure_var) or inspect.isclass(closure_var):
+        elif inspect.isroutine(closure_var) or (
+            inspect.isclass(closure_var)
+            and getattr(closure_var, "__class__", None) not in _BLACKLISTED_CLASSES
+        ):
+            # TODO: figure out better way to handle dynamically created enums
             module = _guess_module(closure_var)
             module_path = getattr(module, "__file__", None)
             if module_path is not None:

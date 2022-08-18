@@ -6,7 +6,7 @@ This exports:
     - load_code: to load code from a string extracted by this package
     - dump, dumps, load, loads: familiar API from the pickle and marshal modules
 """
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 from .extractor.extract import extract_code
 from .loader.load import load_code
