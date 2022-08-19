@@ -4,6 +4,7 @@ Module containing code for extracting source code from live python objects.
 import importlib
 import inspect
 import pickle
+import os
 import re
 import site
 import sys
@@ -22,11 +23,7 @@ _BUILTINS_MODULE_NAMES: Set[str] = {"__builtin__", "__builtins__", "builtins"}
 _NESTED_DETECTOR: Pattern[str] = re.compile(
     r"(\A|\n)[\t ]+(async def |def )[a-zA-Z_-]+\([a-zA-Z0-9,:_.-\[\] ]*\)"
 )
-_ADDITIONAL_PATH_KEYWORDS: Set[str] = {
-    "site-packages",
-    "lib-dynload",
-    "PythonSoftwareFoundation",
-}
+_ADDITIONAL_PATH_KEYWORDS: Set[str] = {os.path.dirname(os.__file__)}
 _POSSIBLE_SITE_PATHS: Set[str] = {
     site.getuserbase(),
     site.getusersitepackages(),
