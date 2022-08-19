@@ -86,6 +86,8 @@ def _extract_code(
     if inspect.isroutine(obj):
         if source_code.startswith("@") and "@staticmethod\n" in source_code:
             source_code = source_code.replace("@staticmethod\n", "")
+        if source_code.startswith("@") and "@property\n" in source_code:
+            source_code = source_code.replace("@property\n", "")
     extracted_code.code = source_code
     dependencies, imports = _get_dependencies(obj)
     extracted_code.dependencies = dependencies
