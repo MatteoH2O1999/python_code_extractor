@@ -12,7 +12,18 @@ import textwrap
 
 from threading import Lock
 from types import ModuleType
-from typing import Callable, Dict, Iterable, Pattern, Tuple, Type, Set, Union
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Pattern,
+    Set,
+    Tuple,
+    Type,
+    Union,
+)
 from warnings import warn
 
 from ..extracted_code import _ExtractedCode
@@ -24,11 +35,28 @@ _NESTED_DETECTOR: Pattern[str] = re.compile(
     r"(\A|\n)[\t ]+(async def |def )[a-zA-Z_-]+\([a-zA-Z0-9,:_.-\[\] ]*\)"
 )
 _ADDITIONAL_PATH_KEYWORDS: Set[str] = {os.path.dirname(os.__file__)}
-_POSSIBLE_SITE_PATHS: Set[str] = {
-    site.getuserbase(),
-    site.getusersitepackages(),
-    *site.getsitepackages(),
-}
+_USER_BASE: Optional[str] = None
+try:
+    _USER_BASE = site.getuserbase()
+except AttributeError:
+    _USER_BASE = None
+_USER_SITE_PACKAGES: Optional[str] = None
+try:
+    _USER_SITE_PACKAGES = site.getusersitepackages()
+except AttributeError:
+    _USER_SITE_PACKAGES = None
+_SITE_PACKAGES: List[str] = []
+try:
+    _SITE_PACKAGES = site.getsitepackages()
+except AttributeError:
+    _SITE_PACKAGES = []
+_POSSIBLE_SITE_PATHS: Set[str] = set()
+if _USER_BASE is not None:
+    _POSSIBLE_SITE_PATHS.add(_USER_BASE)
+if _USER_SITE_PACKAGES is not None:
+    _POSSIBLE_SITE_PATHS.add(_USER_SITE_PACKAGES)
+if len(_SITE_PACKAGES) > 0:
+    _POSSIBLE_SITE_PATHS.update(_SITE_PACKAGES)
 for sys_path in sys.path:
     for keyword in _ADDITIONAL_PATH_KEYWORDS:
         if keyword in sys_path:
