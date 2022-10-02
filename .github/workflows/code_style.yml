@@ -21,7 +21,7 @@ jobs:
       - name: Install wheel
         run: pip install --upgrade wheel
       - name: Install black and pyre
-        run: pip install --upgrade black pyre-check
+        run: pip install -r ./requirements-style.txt
       - name: Check black code style
         run: black --check ./src ./tests
       - name: Pyre type check
