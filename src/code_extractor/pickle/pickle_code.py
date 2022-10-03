@@ -11,15 +11,15 @@ from ..loader.load import load_code
 
 
 class _ReadableFileobj:
-    def read(self, __n: int) -> bytes:
+    def read(self, __n: int) -> bytes:  # pragma: no cover
         ...
 
-    def readline(self) -> bytes:
+    def readline(self) -> bytes:  # pragma: no cover
         ...
 
 
 class _WritableFileobj:
-    def write(self, __b: bytes) -> object:
+    def write(self, __b: bytes) -> object:  # pragma: no cover
         ...
 
 
