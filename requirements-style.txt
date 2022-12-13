@@ -1,4 +1,2 @@
--c ./constraints-style.txt
-
 black
 pyre-check
