@@ -46,6 +46,22 @@ from ..extracted_code import _ExtractedCode
 _MODULE_LOCK: Lock = Lock()
 _SAVED_CODE: Set[str] = set()
 _BUILTINS_MODULE_NAMES: Set[str] = {"__builtin__", "__builtins__", "builtins"}
+_BUILTINS_TYPES: Set[Type[object]] = {
+    bool,
+    int,
+    float,
+    list,
+    tuple,
+    dict,
+    complex,
+    range,
+    str,
+    bytes,
+    bytearray,
+    memoryview,
+    set,
+    frozenset,
+}
 _NESTED_DETECTOR: Pattern[str] = re.compile(
     r"(\A|\n)[\t ]+(async def |def )[a-zA-Z_-]+\([a-zA-Z0-9,:_.-\[\] ]*\)"
 )
@@ -207,6 +223,24 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                             modules.append(possible_module)
                         except ModuleNotFoundError:
                             pass
+                variables = [(closure_var.__name__, closure_var)]
+                for variable_name, variable in variables:
+                    for possible_other_var in possible_other_vars:
+                        try:
+                            possible_variable = getattr(variable, possible_other_var)
+                        except AttributeError:
+                            continue
+                        if inspect.ismodule(possible_variable):
+                            variables.append(
+                                (
+                                    f"{variable_name}.{possible_other_var}",
+                                    possible_variable,
+                                )
+                            )
+                        elif type(possible_variable) in _BUILTINS_TYPES:
+                            dependencies.add(
+                                f"{variable_name}.{possible_other_var} = {possible_variable}\n"
+                            )
         elif inspect.isroutine(closure_var) or inspect.isclass(closure_var):
             module = _guess_module(closure_var)
             module_path = getattr(module, "__file__", None)
@@ -264,6 +298,8 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                     imports.add(
                         f"from {module.__name__} import {closure_var.__name__} as {name}"
                     )
+        elif type(closure_var) in _BUILTINS_TYPES:
+            dependencies.add(f"{name} = {str(closure_var)}\n")
         else:
             new_dep, new_imp = _pickle(name, closure_var)
             dependencies.update(new_dep)
