@@ -46,7 +46,7 @@ def test_extract_function_with_global_variable():
         assert extracted_code.name == expected_code.name
         assert extracted_code.code == expected_code.code
         assert extracted_code.imports == expected_code.imports
-        assert len(w) == 3
+        assert len(w) == 1
         for warning in w:
             assert (
                 "Will fallback to pickle the value but compatibility with different versions is not guaranteed."

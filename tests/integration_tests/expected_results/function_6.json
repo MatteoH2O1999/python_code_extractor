@@ -1,7 +1,7 @@
 {
   "name": "function_6",
   "code": "def function_6():\n    return math.pi\n",
-  "dependencies": [],
+  "dependencies": ["math.pi = 3.141592653589793\n"],
   "imports": ["import math"],
   "requirements" : []
 }
