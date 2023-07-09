@@ -13,7 +13,7 @@ class DummyEnum(Enum):
 
 
 @enum.unique
-class DummyEnum(enum.Enum):
+class DummyEnumModule(enum.Enum):
     Dummy1 = enum.auto()
     Dummy2 = enum.auto()
     Dummy3 = enum.auto()

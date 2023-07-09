@@ -18,6 +18,7 @@ Module containing code for extracting source code from live python objects.
 """
 import importlib
 import inspect
+import enum
 import pickle
 import os
 import re
@@ -241,6 +242,20 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                             dependencies.add(
                                 f"{variable_name}.{possible_other_var} = {possible_variable}\n"
                             )
+                        elif isinstance(possible_variable, enum.EnumMeta):
+                            imports.add("import enum")
+                            value = possible_other_var
+                            names = [
+                                (data.name, data.value) for data in possible_variable
+                            ]
+                            dependencies.add(
+                                f"{variable_name}.{value} = enum.Enum(value='{value}', names={names})\n"
+                            )
+        elif isinstance(closure_var, enum.EnumMeta):
+            imports.add("import enum")
+            value = name
+            names = [(data.name, data.value) for data in closure_var]
+            dependencies.add(f"{value} = enum.Enum(value='{value}', names={names})\n")
         elif inspect.isroutine(closure_var) or inspect.isclass(closure_var):
             module = _guess_module(closure_var)
             module_path = getattr(module, "__file__", None)
