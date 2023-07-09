@@ -84,7 +84,7 @@ Use
 ```pycon
 >>> import code_extractor
 >>> code_extractor.dump(...)
->>> code_extractor.dumps()
+>>> code_extractor.dumps(...)
 >>> code_extractor.load(...)
 >>> code_extractor.loads(...)
 ```
