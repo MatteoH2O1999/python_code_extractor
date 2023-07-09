@@ -1,0 +1,7 @@
+{
+  "name": "function_enum",
+  "code": "def function_enum():\n    return DummyEnum.Dummy2\n",
+  "dependencies": ["DummyEnum = enum.Enum(value='DummyEnum', names=[('Dummy1', 1), ('Dummy2', 2), ('Dummy3', 3)])\n"],
+  "imports": ["import enum"],
+  "requirements" : []
+}
