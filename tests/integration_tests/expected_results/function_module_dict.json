@@ -1,7 +1,7 @@
 {
   "name": "function_module_dict",
   "code": "def function_module_dict():\n    return dummy.dummy_dict\n",
-  "dependencies": ["dummy.dummy_dict = {'a': [0, 1, 2], 'b': [3, 4, 5]}\n"],
+  "dependencies": ["dummy.dummy_dict = {'a': [0, 1, 2], 'b': [3, 4, 5], 'c': 'a'}\n"],
   "imports": ["import dummy"],
   "requirements" : []
 }

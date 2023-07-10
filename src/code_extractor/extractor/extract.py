@@ -43,26 +43,11 @@ from typing import (
 from warnings import warn
 
 from ..extracted_code import _ExtractedCode
+from .literals import _save_literal, _BUILTINS_TYPES
 
 _MODULE_LOCK: Lock = Lock()
 _SAVED_CODE: Set[str] = set()
 _BUILTINS_MODULE_NAMES: Set[str] = {"__builtin__", "__builtins__", "builtins"}
-_BUILTINS_TYPES: Set[Type[object]] = {
-    bool,
-    int,
-    float,
-    list,
-    tuple,
-    dict,
-    complex,
-    range,
-    str,
-    bytes,
-    bytearray,
-    memoryview,
-    set,
-    frozenset,
-}
 _NESTED_DETECTOR: Pattern[str] = re.compile(
     r"(\A|\n)[\t ]+(async def |def )[a-zA-Z_-]+\([a-zA-Z0-9,:_.-\[\] ]*\)"
 )
@@ -239,9 +224,12 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                                 )
                             )
                         elif type(possible_variable) in _BUILTINS_TYPES:
-                            dependencies.add(
-                                f"{variable_name}.{possible_other_var} = {possible_variable}\n"
+                            new_dep, new_imp = _save_literal(
+                                f"{variable_name}.{possible_other_var}",
+                                possible_variable,
                             )
+                            dependencies.update(new_dep)
+                            imports.update(new_imp)
                         elif isinstance(possible_variable, enum.EnumMeta):
                             imports.add("import enum")
                             value = possible_other_var
@@ -314,7 +302,9 @@ def _get_function_dependencies(obj: Callable[..., object]) -> Tuple[Set[str], Se
                         f"from {module.__name__} import {closure_var.__name__} as {name}"
                     )
         elif type(closure_var) in _BUILTINS_TYPES:
-            dependencies.add(f"{name} = {str(closure_var)}\n")
+            new_dep, new_imp = _save_literal(name, closure_var)
+            dependencies.update(new_dep)
+            imports.update(new_imp)
         else:
             new_dep, new_imp = _pickle(name, closure_var)
             dependencies.update(new_dep)
