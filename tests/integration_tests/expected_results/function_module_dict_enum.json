@@ -1,0 +1,11 @@
+{
+  "name": "function_module_dict_enum",
+  "code": "def function_module_dict_enum():\n    return dummy.dummy_dict_enum\n",
+  "dependencies": [
+    "dummy.dummy_dict_enum = {dummy.DummyEnum.Dummy2: 5, dummy.DummyEnumModule.Dummy3: 1, 'key': 42}\n",
+    "dummy.DummyEnum = enum.Enum(value='DummyEnum', module='dummy', names=[('Dummy1', 1), ('Dummy2', 2), ('Dummy3', 3)])\n",
+    "dummy.DummyEnumModule = enum.Enum(value='DummyEnumModule', module='dummy', names=[('Dummy1', 1), ('Dummy2', 2), ('Dummy3', 3)])\n"
+  ],
+  "imports": ["import enum", "import dummy"],
+  "requirements" : []
+}
